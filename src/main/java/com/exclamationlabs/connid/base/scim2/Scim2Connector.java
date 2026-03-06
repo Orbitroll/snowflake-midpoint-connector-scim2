@@ -21,7 +21,7 @@ import static com.exclamationlabs.connid.base.scim2.adapter.Scim2GroupsAdapter.S
 import static com.exclamationlabs.connid.base.scim2.adapter.Scim2UserAdapter.SCIM2_CORE_USER_SCHEMA;
 
 @ConnectorClass(
-    displayNameKey = "scim2.connector.display",
+  displayNameKey = "snowflake.scim2.connector.display",
     configurationClass = Scim2Configuration.class)
 public class Scim2Connector extends BaseFullAccessConnector<Scim2Configuration> implements DiscoverConfigurationOp{
 

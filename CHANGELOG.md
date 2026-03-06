@@ -1,7 +1,7 @@
 # connector-scim2
 
 ## Change Log 
-+ **Unreleased** - Snowflake/midPoint compatibility: sanitize Service URL input and allow `test()` fallback to `/Users?count=1` when `/ResourceTypes` is unavailable and dynamic schema is disabled (2026/03/06)
++ **1.2.10** - Snowflake connector naming updates: UI display label changed to `Snowflake SCIM2 Connector`; includes Service URL sanitization and fallback to `/Users?count=1` when `/ResourceTypes` discovery is unavailable and dynamic schema is disabled (2026/03/06)
 + **1.2.9** - INT-210 AWS Resource Configuration with Group Support and Updated function libraries (2025/06/30)
 + **1.2.8** - INT-197 Improve connector test() method and add unit test support (2025/02/26)
 + **1.2.7** - AWS Get Users for a group and Get Groups for Auser changes implemented (2024/12/18)
