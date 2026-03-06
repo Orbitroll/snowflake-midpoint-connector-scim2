@@ -11,6 +11,7 @@ import com.exclamationlabs.connid.base.scim2.model.Resource;
 import com.exclamationlabs.connid.base.scim2.model.Scim2Group;
 import com.exclamationlabs.connid.base.scim2.model.Scim2User;
 import com.exclamationlabs.connid.base.scim2.model.response.ResourceTypesResponse;
+import com.exclamationlabs.connid.base.scim2.util.Scim2Utils;
 import org.identityconnectors.framework.common.exceptions.ConnectorException;
 
 import java.util.List;
@@ -36,7 +37,7 @@ public class Scim2Driver extends BaseRestDriver<Scim2Configuration> {
 
   @Override
   protected String getBaseServiceUrl() {
-    return getConfiguration().getServiceUrl();
+    return Scim2Utils.sanitizeUrl(getConfiguration().getServiceUrl());
   }
 
   @Override
@@ -54,20 +55,43 @@ public class Scim2Driver extends BaseRestDriver<Scim2Configuration> {
    */
   @Override
   public void test() throws ConnectorException {
+    final boolean strictDiscovery = Boolean.TRUE.equals(getConfiguration().getEnableDynamicSchema());
     try {
       Logger.info(this, "Performing Scim2 Connector Test Procedure");
-      RestResponseData<ResourceTypesResponse> rd = executeRequest(
-                  new RestRequest.Builder<>(ResourceTypesResponse.class)
-                      .withGet()
-                      .withRequestUri("/ResourceTypes")
-                      .build());
-      ResourceTypesResponse response = rd.getResponseObject();
+      ResourceTypesResponse response = null;
+      try {
+        RestResponseData<ResourceTypesResponse> rd = executeRequest(
+            new RestRequest.Builder<>(ResourceTypesResponse.class)
+                .withGet()
+                .withRequestUri("/ResourceTypes")
+                .build());
+        response = rd == null ? null : rd.getResponseObject();
+      } catch (Exception discoveryError) {
+        if (strictDiscovery) {
+          throw discoveryError;
+        }
+        Logger.info(this, "ResourceTypes discovery is unavailable. Falling back to Users endpoint test.");
+        testUsersEndpointReachability();
+        return;
+      }
+
       if (response == null) {
-        throw new ConnectorException("ResourceTypes response was null.");
+        if (strictDiscovery) {
+          throw new ConnectorException("ResourceTypes response was null.");
+        }
+        Logger.info(this, "ResourceTypes response is empty. Falling back to Users endpoint test.");
+        testUsersEndpointReachability();
+        return;
       }
       if (response.getResources() == null || response.getResources().isEmpty()) {
-        throw new ConnectorException("ResourceTypes resources is null or empty.");
+        if (strictDiscovery) {
+          throw new ConnectorException("ResourceTypes resources is null or empty.");
+        }
+        Logger.info(this, "ResourceTypes list is empty. Falling back to Users endpoint test.");
+        testUsersEndpointReachability();
+        return;
       }
+
       List<String> resourceNames = response.getResources().stream()
           .map(Resource::getName)
           .collect(Collectors.toList());
@@ -80,6 +104,17 @@ public class Scim2Driver extends BaseRestDriver<Scim2Configuration> {
     } catch (Exception e) {
       throw new ConnectorException("SCIM2 Connection test to detect resource types failed.", e);
     }
+  }
+
+  private void testUsersEndpointReachability() {
+    String usersEndpoint = Scim2Utils.normalizeEndpointPath(
+        getConfiguration().getUsersEndpointUrl(),
+        "/Users");
+    String requestUri = usersEndpoint.contains("?") ? usersEndpoint : usersEndpoint + "?count=1";
+    executeRequest(new RestRequest.Builder<>(Object.class)
+        .withGet()
+        .withRequestUri(requestUri)
+        .build());
   }
 
   /*@Override

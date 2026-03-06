@@ -2,7 +2,7 @@
 
 # 1	Overview
 ConnID Connector to support [System for Cross-domain Identity Management (SCIM2)](https://www.rfc-editor.org/rfc/rfc7642.html) 
-API for Identify and Access Management (IAM) of Remote Services
+API for Identity and Access Management (IAM) of Remote Services
 
 This open source connector for the SCIM2 API uses the [ConnId Framework](https://connid.tirasa.net/) 
 for integration with Identity and Access Management (IAM) systems such as [Evolveum Midpoint](https://evolveum.com/midpoint/).
@@ -23,7 +23,17 @@ The Scim2 Connector has the following features:
 * The connector supports automatic pagination for User and Group objects.
 * The connector currently supports standard, enterprise, AWS, and Slack.
 
-*Note:* Dynamic schema support is currently not implemented.  It may be implemented in a future release.
+*Note:* Dynamic schema support is currently not implemented. It may be implemented in a future release.
+
+## Snowflake Notes
+
+When integrating with Snowflake SCIM and midPoint:
+
+* Use `Enable Dynamic Schema = false`.
+* Configure `Users Endpoint URL = /Users` and `Groups Endpoint URL = /Groups`.
+* The connector test procedure attempts `GET /ResourceTypes` first.
+* If `Enable Dynamic Schema = false` and discovery is unavailable/empty, the connector falls back to `GET /Users?count=1` to validate connectivity.
+* `Service URL` values are sanitized before request construction to prevent failures caused by hidden/control characters copied from UI fields.
 
 # Connector Configuration
 
@@ -58,7 +68,6 @@ properties are being read in from a property file, you may also need to know the
        <td>Number of retries that will be attempted when an IO error occurs. Default is 5.
        </td>
       </tr>
-      <tr>
       <tr>
        <td>Token
        </td>
