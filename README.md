@@ -1,8 +1,10 @@
-# Connector Scim2
+# Snowflake SCIM2 Connector
 
 # 1	Overview
-ConnID Connector to support [System for Cross-domain Identity Management (SCIM2)](https://www.rfc-editor.org/rfc/rfc7642.html) 
-API for Identity and Access Management (IAM) of Remote Services
+ConnID connector to support [System for Cross-domain Identity Management (SCIM2)](https://www.rfc-editor.org/rfc/rfc7642.html)
+API integration for Identity and Access Management (IAM) of remote services.
+
+This fork was created specifically for Snowflake SCIM integration with midPoint.
 
 This open source connector for the SCIM2 API uses the [ConnId Framework](https://connid.tirasa.net/) 
 for integration with Identity and Access Management (IAM) systems such as [Evolveum Midpoint](https://evolveum.com/midpoint/).
@@ -13,7 +15,7 @@ This software is Copyright 2024 Exclamation Graphics. Licensed under the Apache 
 
 # 2	Features
 
-The Scim2 Connector has the following features:
+The Snowflake Scim2 Connector has the following features:
 
 * The connector configuration is specified in the user interface.
 * The connector supports Users and Groups.
@@ -21,7 +23,7 @@ The Scim2 Connector has the following features:
 * The connector can Create, Update, Delete, and Search Users.
 * The connector can Create, Update, Delete, and Search Groups.
 * The connector supports automatic pagination for User and Group objects.
-* The connector currently supports standard, enterprise, AWS, and Slack.
+* The connector includes Snowflake-focused behavior for connection testing and endpoint handling.
 
 *Note:* Dynamic schema support is currently not implemented. It may be implemented in a future release.
 
@@ -31,9 +33,42 @@ When integrating with Snowflake SCIM and midPoint:
 
 * Use `Enable Dynamic Schema = false`.
 * Configure `Users Endpoint URL = /Users` and `Groups Endpoint URL = /Groups`.
-* The connector test procedure attempts `GET /ResourceTypes` first.
-* If `Enable Dynamic Schema = false` and discovery is unavailable/empty, the connector falls back to `GET /Users?count=1` to validate connectivity.
+* The connector test procedure validates connectivity using the Users endpoint only.
+* The connector attempts `GET /Users?count=1` first and retries with `GET /Users` if query parameters are rejected by the backend.
 * `Service URL` values are sanitized before request construction to prevent failures caused by hidden/control characters copied from UI fields.
+
+## Dynamic Schema Behavior (Snowflake)
+
+This fork includes Snowflake-specific behavior to avoid failures caused by SCIM discovery endpoints.
+
+### What changed
+
+* Connector test no longer depends on `GET /ResourceTypes`.
+* Connector test validates connectivity using `GET /Users` endpoint only.
+* Reachability probe uses `GET /Users?count=1` and falls back to `GET /Users` if the backend rejects query parameters.
+* Fault handling was hardened for missing or non-JSON `Content-Type` headers in error responses.
+
+### Why this was needed
+
+* Some Snowflake SCIM deployments do not provide `ResourceTypes` in a format expected by generic SCIM discovery logic.
+* Dynamic schema discovery caused resource test/discovery failures in midPoint even when `/Users` was reachable.
+
+### Required connector settings for Snowflake
+
+* `Enable Dynamic Schema = false`
+* `Enable Standard Schema = true`
+* `Users Endpoint URL = /Users`
+* `Groups Endpoint URL = /Groups`
+
+### Expected test behavior
+
+* `Test connection` verifies Users endpoint reachability.
+* If test fails, the issue is now endpoint/auth/backend related, not `ResourceTypes` discovery.
+
+### Migration note
+
+If you upgraded from an older build and still see errors mentioning
+`SCIM2 Connection test to detect resource types failed`, redeploy the latest connector jar and ensure only one Snowflake connector jar exists in `var/icf-connectors`.
 
 # Connector Configuration
 
