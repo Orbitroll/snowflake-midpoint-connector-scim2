@@ -3,19 +3,13 @@ package com.exclamationlabs.connid.base.scim2.driver.rest;
 import com.exclamationlabs.connid.base.connector.driver.rest.BaseRestDriver;
 import com.exclamationlabs.connid.base.connector.driver.rest.RestFaultProcessor;
 import com.exclamationlabs.connid.base.connector.driver.rest.RestRequest;
-import com.exclamationlabs.connid.base.connector.driver.rest.RestResponseData;
 import com.exclamationlabs.connid.base.connector.logging.Logger;
 import com.exclamationlabs.connid.base.connector.model.IdentityModel;
 import com.exclamationlabs.connid.base.scim2.configuration.Scim2Configuration;
-import com.exclamationlabs.connid.base.scim2.model.Resource;
 import com.exclamationlabs.connid.base.scim2.model.Scim2Group;
 import com.exclamationlabs.connid.base.scim2.model.Scim2User;
-import com.exclamationlabs.connid.base.scim2.model.response.ResourceTypesResponse;
 import com.exclamationlabs.connid.base.scim2.util.Scim2Utils;
 import org.identityconnectors.framework.common.exceptions.ConnectorException;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class Scim2Driver extends BaseRestDriver<Scim2Configuration> {
 
@@ -48,57 +42,17 @@ public class Scim2Driver extends BaseRestDriver<Scim2Configuration> {
   }
 
   /**
-   * Validate the resource types available on the SCIM2 server in order to test the connector.
-   * Verify that Users and Groups are available.
+   * Validate SCIM connectivity by checking that the Users endpoint is reachable.
    *
    * @throws ConnectorException if there is an error during the connection test
    */
   @Override
   public void test() throws ConnectorException {
-    final boolean strictDiscovery = Boolean.TRUE.equals(getConfiguration().getEnableDynamicSchema());
     try {
       Logger.info(this, "Performing Scim2 Connector Test Procedure");
-      if (!strictDiscovery) {
-        // Snowflake and other non-dynamic deployments should only validate that Users endpoint is reachable.
-        testUsersEndpointReachability();
-        return;
-      }
-
-      ResourceTypesResponse response = null;
-      try {
-        RestResponseData<ResourceTypesResponse> rd = executeRequest(
-            new RestRequest.Builder<>(ResourceTypesResponse.class)
-                .withGet()
-                .withRequestUri("/ResourceTypes")
-                .build());
-        response = rd == null ? null : rd.getResponseObject();
-      } catch (Exception discoveryError) {
-        if (strictDiscovery) {
-          throw discoveryError;
-        }
-        Logger.info(this, "ResourceTypes discovery is unavailable. Falling back to Users endpoint test.");
-        testUsersEndpointReachability();
-        return;
-      }
-
-      if (response == null) {
-        throw new ConnectorException("ResourceTypes response was null.");
-      }
-      if (response.getResources() == null || response.getResources().isEmpty()) {
-        throw new ConnectorException("ResourceTypes resources is null or empty.");
-      }
-
-      List<String> resourceNames = response.getResources().stream()
-          .map(Resource::getName)
-          .collect(Collectors.toList());
-      if (!resourceNames.contains("User")) {
-          throw new ConnectorException("ResourceTypes does not contain User resource.");
-      }
-      if (!resourceNames.contains("Group")) {
-          throw new ConnectorException("ResourceTypes does not contain Group resource.");
-      }
+      testUsersEndpointReachability();
     } catch (Exception e) {
-      throw new ConnectorException("SCIM2 Connection test to detect resource types failed.", e);
+      throw new ConnectorException("SCIM2 connection test via Users endpoint failed.", e);
     }
   }
 
