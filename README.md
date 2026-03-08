@@ -1,4 +1,4 @@
-# Snowflake SCIM2 Connector
+# -- Midpoint Snowflake SCIM2 Connector -- 
 
 # 1	Overview
 ConnID connector to support [System for Cross-domain Identity Management (SCIM2)](https://www.rfc-editor.org/rfc/rfc7642.html)
