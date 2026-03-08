@@ -58,6 +58,12 @@ public class Scim2Driver extends BaseRestDriver<Scim2Configuration> {
     final boolean strictDiscovery = Boolean.TRUE.equals(getConfiguration().getEnableDynamicSchema());
     try {
       Logger.info(this, "Performing Scim2 Connector Test Procedure");
+      if (!strictDiscovery) {
+        // Snowflake and other non-dynamic deployments should only validate that Users endpoint is reachable.
+        testUsersEndpointReachability();
+        return;
+      }
+
       ResourceTypesResponse response = null;
       try {
         RestResponseData<ResourceTypesResponse> rd = executeRequest(
@@ -76,20 +82,10 @@ public class Scim2Driver extends BaseRestDriver<Scim2Configuration> {
       }
 
       if (response == null) {
-        if (strictDiscovery) {
-          throw new ConnectorException("ResourceTypes response was null.");
-        }
-        Logger.info(this, "ResourceTypes response is empty. Falling back to Users endpoint test.");
-        testUsersEndpointReachability();
-        return;
+        throw new ConnectorException("ResourceTypes response was null.");
       }
       if (response.getResources() == null || response.getResources().isEmpty()) {
-        if (strictDiscovery) {
-          throw new ConnectorException("ResourceTypes resources is null or empty.");
-        }
-        Logger.info(this, "ResourceTypes list is empty. Falling back to Users endpoint test.");
-        testUsersEndpointReachability();
-        return;
+        throw new ConnectorException("ResourceTypes resources is null or empty.");
       }
 
       List<String> resourceNames = response.getResources().stream()

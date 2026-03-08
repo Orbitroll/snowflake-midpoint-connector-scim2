@@ -27,15 +27,20 @@ public class Scim2FaultProcessor implements RestFaultProcessor {
   public void process(HttpResponse httpResponse, GsonBuilder gsonBuilder) {
     String rawResponse;
     try {
-      rawResponse = EntityUtils.toString(httpResponse.getEntity(), Charsets.UTF_8);
+      rawResponse = httpResponse.getEntity() == null
+          ? ""
+          : EntityUtils.toString(httpResponse.getEntity(), Charsets.UTF_8);
       Logger.info(this, String.format("Raw Fault response %s", rawResponse));
 
       Header responseType = httpResponse.getFirstHeader("Content-Type");
-      String responseTypeValue = responseType.getValue();
+      String responseTypeValue = responseType == null ? null : responseType.getValue();
+      if (StringUtils.isBlank(responseTypeValue)) {
+        handleFaultResponse(httpResponse.getStatusLine().getStatusCode(), rawResponse, gsonBuilder);
+        return;
+      }
       if (!StringUtils.contains(responseTypeValue, ContentType.APPLICATION_JSON.getMimeType())) {
-        String errorMessage = "Unable to parse response, not valid JSON: ";
-        Logger.info(this, String.format("%s %s", errorMessage, rawResponse));
-        throw new ConnectorException(errorMessage + rawResponse);
+        handleFaultResponse(httpResponse.getStatusLine().getStatusCode(), rawResponse, gsonBuilder);
+        return;
       }
 
       handleFaultResponse(httpResponse.getStatusLine().getStatusCode(), rawResponse, gsonBuilder);
@@ -52,7 +57,12 @@ public class Scim2FaultProcessor implements RestFaultProcessor {
   }
 
   private void handleFaultResponse(Integer httpStatus, String rawResponse, GsonBuilder gsonBuilder) {
-    Scim2ErrorResponse faultData = gsonBuilder.create().fromJson(rawResponse, Scim2ErrorResponse.class);
+    Scim2ErrorResponse faultData = null;
+    try {
+      faultData = gsonBuilder.create().fromJson(rawResponse, Scim2ErrorResponse.class);
+    } catch (Exception e) {
+      Logger.info(this, String.format("Unable to parse fault body as JSON; using HTTP status handling. Response: %s", rawResponse));
+    }
     if (faultData != null) {
       if (faultData.getStatus() != null) {
         if (checkRecognizedFaultCodes(faultData)) {
