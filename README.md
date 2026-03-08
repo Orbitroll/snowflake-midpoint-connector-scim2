@@ -699,12 +699,5 @@ The SCIM2 Connector supports the following Query Operations
 
 # References
 
-1. [RFC 7642 SCIM2 Definitions, Overview, Concepts, and Requirements](https://datatracker.ietf.org/doc/html/rfc7642)
-2. [RFC 7643 SCIM2 Core Schema](https://datatracker.ietf.org/doc/html/rfc7643)
-3. [RFC 7644 SCIM2 Protocol](https://datatracker.ietf.org/doc/html/rfc7644)
-4. [Amazon Web Services SCIM Implementation Guide](https://docs.aws.amazon.com/singlesignon/latest/developerguide/what-is-scim.html)
-5. [Slack API Provisioning with SCIM 2.0](https://api.slack.com/admins/scim2)
-6. [Zoom SCIM2 API](https://developers.zoom.us/docs/api/rest/reference/scim-api/methods/#overview)
-7. [SalesForce SCIM2 Implementation](https://help.salesforce.com/s/articleView?id=sf.identity_scim_overview.htm&type=5)
-8. [Fast Fed SCIM2 Interoperability Requirements](https://openid.net/specs/fastfed-scim-1_0-02.html#rfc.section.4)
+1. [ExclamationLabs SCIM2 Connector](https://github.com/ExclamationLabs/connector-scim2)
 
