@@ -60,11 +60,22 @@ public class Scim2Driver extends BaseRestDriver<Scim2Configuration> {
     String usersEndpoint = Scim2Utils.normalizeEndpointPath(
         getConfiguration().getUsersEndpointUrl(),
         "/Users");
-    String requestUri = usersEndpoint.contains("?") ? usersEndpoint : usersEndpoint + "?count=1";
-    executeRequest(new RestRequest.Builder<>(Object.class)
-        .withGet()
-        .withRequestUri(requestUri)
-        .build());
+    String requestUriWithCount = usersEndpoint.contains("?") ? usersEndpoint : usersEndpoint + "?count=1";
+    try {
+      executeRequest(new RestRequest.Builder<>(Object.class)
+          .withGet()
+          .withRequestUri(requestUriWithCount)
+          .build());
+    } catch (Exception countProbeError) {
+      // Some SCIM providers reject query parameters on reachability checks.
+      if (!usersEndpoint.equals(requestUriWithCount)) {
+        Logger.info(this, "Users endpoint rejected count parameter. Retrying without query string.");
+      }
+      executeRequest(new RestRequest.Builder<>(Object.class)
+          .withGet()
+          .withRequestUri(usersEndpoint)
+          .build());
+    }
   }
 
   /*@Override
