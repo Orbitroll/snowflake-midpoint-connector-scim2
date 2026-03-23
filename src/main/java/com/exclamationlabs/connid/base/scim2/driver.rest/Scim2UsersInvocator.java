@@ -229,13 +229,20 @@ public class Scim2UsersInvocator implements DriverInvocator<Scim2Driver, Scim2Us
      */
     public static String getPagingParameter(ResultsPaginator paginator)
     {
+        return getPagingParameter(paginator, null);
+    }
+    
+    public static String getPagingParameter(ResultsPaginator paginator, Scim2Configuration config)
+    {
         String parameter = null;
         if ( paginator != null )
         {
             if ( paginator.hasPagination() )
             {
                 Integer count = paginator.getPageSize();
-                parameter = "count=" + count;
+                if (config == null || config.getSnowflakeCompatibilityMode() == null || !config.getSnowflakeCompatibilityMode()) {
+                    parameter = "count=" + count;
+                }
             }
             if ( paginator.getCurrentOffset() != null ) {
                 Integer startIndex = paginator.getCurrentOffset();
@@ -266,7 +273,7 @@ public class Scim2UsersInvocator implements DriverInvocator<Scim2Driver, Scim2Us
         Scim2Configuration config = driver.getConfiguration();
         List<Scim2User> userList = new ArrayList<>();
         String filterParameter = Scim2UsersInvocator.getFilterParameter(filter);
-        String pagingParameter = Scim2UsersInvocator.getPagingParameter(paginator);
+        String pagingParameter = Scim2UsersInvocator.getPagingParameter(paginator, config);
         String query = "";
         if (pagingParameter != null && filterParameter != null)
         {
@@ -475,6 +482,25 @@ public class Scim2UsersInvocator implements DriverInvocator<Scim2Driver, Scim2Us
     }
 
     private static boolean isUserInGroup(Scim2Driver driver,String userId, String groupId) throws Exception {
+        if (driver.getConfiguration().getSnowflakeCompatibilityMode() != null && driver.getConfiguration().getSnowflakeCompatibilityMode()) {
+            RestRequest<Scim2Group> request = new RestRequest.Builder<>(Scim2Group.class)
+                    .withGet()
+                    .withRequestUri(driver.getConfiguration().getGroupsEndpointUrl() + "/" + URLEncoder.encode(groupId, StandardCharsets.UTF_8.toString()))
+                    .build();
+            RestResponseData<Scim2Group> data = driver.executeRequest(request);
+            if (data.getResponseStatusCode() == HttpStatus.SC_OK && data.getResponseObject() != null) {
+                Scim2Group group = data.getResponseObject();
+                if (group.getMembers() != null) {
+                    for (Map<String, String> member : group.getMembers()) {
+                        if (userId.equals(member.get("value"))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         String filter = String.format("id eq \"%s\" and members eq \"%s\"",
                 URLEncoder.encode(groupId, StandardCharsets.UTF_8.toString()),
                 URLEncoder.encode(userId, StandardCharsets.UTF_8.toString()));

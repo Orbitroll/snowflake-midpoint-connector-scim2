@@ -121,7 +121,7 @@ public class Scim2SlackUsersInvocator implements DriverInvocator<Scim2Driver, Sc
     Scim2Configuration config = driver.getConfiguration();
     List<Scim2SlackUser> userList = new ArrayList<>();
     String filterParameter = Scim2UsersInvocator.getFilterParameter(filter);
-    String pagingParameter = Scim2UsersInvocator.getPagingParameter(paginator);
+    String pagingParameter = Scim2UsersInvocator.getPagingParameter(paginator, config);
     String query = "";
     if ( pagingParameter != null && filterParameter != null )
     {

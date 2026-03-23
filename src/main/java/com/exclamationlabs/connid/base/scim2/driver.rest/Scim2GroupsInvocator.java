@@ -66,7 +66,7 @@ public class Scim2GroupsInvocator implements DriverInvocator<Scim2Driver, Scim2G
     List<Scim2Group> groupList = new ArrayList<>();
     Scim2Configuration config = driver.getConfiguration();
     String filterParameter = Scim2UsersInvocator.getFilterParameter(filter);
-    String pagingParameter = Scim2UsersInvocator.getPagingParameter(paginator);
+    String pagingParameter = Scim2UsersInvocator.getPagingParameter(paginator, config);
     String query = "";
     if ( pagingParameter != null && filterParameter != null )
     {
@@ -322,7 +322,24 @@ public class Scim2GroupsInvocator implements DriverInvocator<Scim2Driver, Scim2G
       return groupMaps;
   }
 
-  private static boolean isUserInGroup(Scim2Driver driver,String userId, String groupId) throws Exception {
+  private static boolean isUserInGroup(Scim2Driver driver,String userId, String groupId) throws Exception {      if (driver.getConfiguration().getSnowflakeCompatibilityMode() != null && driver.getConfiguration().getSnowflakeCompatibilityMode()) {
+          RestRequest<Scim2Group> request = new RestRequest.Builder<>(Scim2Group.class)
+                  .withGet()
+                  .withRequestUri(driver.getConfiguration().getGroupsEndpointUrl() + "/" + URLEncoder.encode(groupId, StandardCharsets.UTF_8.toString()))
+                  .build();
+          RestResponseData<Scim2Group> data = driver.executeRequest(request);
+          if (data.getResponseStatusCode() == HttpStatus.SC_OK && data.getResponseObject() != null) {
+              Scim2Group group = data.getResponseObject();
+              if (group.getMembers() != null) {
+                  for (Map<String, String> member : group.getMembers()) {
+                      if (userId.equals(member.get("value"))) {
+                          return true;
+                      }
+                  }
+              }
+          }
+          return false;
+      }
     String filter = String.format("id eq \"%s\" and members eq \"%s\"",
             URLEncoder.encode(groupId, StandardCharsets.UTF_8.toString()),
             URLEncoder.encode(userId, StandardCharsets.UTF_8.toString()));

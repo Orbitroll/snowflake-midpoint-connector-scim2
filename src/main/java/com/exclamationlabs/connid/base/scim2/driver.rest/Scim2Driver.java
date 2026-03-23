@@ -60,7 +60,12 @@ public class Scim2Driver extends BaseRestDriver<Scim2Configuration> {
     String usersEndpoint = Scim2Utils.normalizeEndpointPath(
         getConfiguration().getUsersEndpointUrl(),
         "/Users");
+    
     String requestUriWithCount = usersEndpoint.contains("?") ? usersEndpoint : usersEndpoint + "?count=1";
+    if (getConfiguration().getSnowflakeCompatibilityMode() != null && getConfiguration().getSnowflakeCompatibilityMode()) {
+        requestUriWithCount = usersEndpoint;
+    }
+
     try {
       executeRequest(new RestRequest.Builder<>(Object.class)
           .withGet()

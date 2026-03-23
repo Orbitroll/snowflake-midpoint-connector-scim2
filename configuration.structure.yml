@@ -55,6 +55,12 @@ custom:
         display: 'Groups Endpoint URL'
         help: 'Discovered from the resource type or entered manually'
     optional:
+      snowflakeCompatibilityMode:
+        type: boolean
+        default: 'false'
+        order: 3090
+        display: 'Snowflake Compatibility Mode'
+        help: 'Enable compatibility mode for Snowflake SCIM API (removes count from GET Requests and simplifies group tests).'
       userSchemaIdList:
         type: string_array
         order: 3100
